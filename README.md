@@ -1,4 +1,4 @@
-# text-to-podcast-llm-app
+# draft-master-llm-app
 
 This Shiny for Python app is inspired by the Copilot email drafting feature for Outlook from Microsoft. It helps you draft an email or text message with some help from the OpenAI API. Not all email client or text message apps have an AI assistant like Copilot enabled, so this app can help you in those cases.
 
