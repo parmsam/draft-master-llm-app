@@ -42,9 +42,9 @@ app_ui = ui.page_fluid(
         ),
         ui.column(4,
             ui.row([
-                ui.input_checkbox("fix_spelling", "Fix spelling"),
-                ui.input_checkbox("fix_grammar", "Fix grammar"),
-                ui.input_checkbox("fix_punctuation", "Fix punctuation"),
+                ui.input_switch("fix_spelling", "Fix spelling"),
+                ui.input_switch("fix_grammar", "Fix grammar"),
+                ui.input_switch("fix_punctuation", "Fix punctuation"),
             ])
         ),
     ]),
@@ -54,17 +54,31 @@ app_ui = ui.page_fluid(
     ui.p("Note: Your API key is never stored and is only used for message generation."),
     ui.card(
         ui.output_ui("generated_message"),
-        ui.input_action_button("copy", "Copy to Clipboard", class_="btn-primary"),
-        ui.tags.script(
-            """
-            $(function() {
-                Shiny.addCustomMessageHandler("copy_to_clipboard", function(message) {
-                    navigator.clipboard.writeText(message.text);
+        ui.panel_conditional(
+            "input.generate",
+            ui.input_action_button("copy", "Copy to Clipboard", class_="btn-primary"),
+            ui.tags.script(
+                """
+                $(function() {
+                    Shiny.addCustomMessageHandler("copy_to_clipboard", function(message) {
+                        navigator.clipboard.writeText(message.text);
+                    });
                 });
-            });
-            """
+                """
+            ),
+            ui.input_action_button("adjust", "Adjust"),
+            ui.input_select("adjust_option", "Adjust the generated message (optional)",
+                choices=[
+                    "Make it longer", 
+                    "Make it shorter",
+                    "Make it sound more formal",
+                    "Make it sound more direct",
+                    "Make it sound more casual",
+                    "Make it a poem"
+                ],
+            ),
         ),
-    )
+    ),
 )
 
 def server(input, output, session):
@@ -106,8 +120,7 @@ def server(input, output, session):
         Special instructions: {', '.join(special_instructions) if special_instructions else 'None'}
         Ensure you follow good spacing and formatting.
         Only provide the message text, no need to include the instructions or specifications.
-        """
-        
+        """ 
         try:
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -119,6 +132,41 @@ def server(input, output, session):
             generate_message = response.choices[0].message.content.strip()
             ui.notification_show("Message generated successfully!", duration=3)
             message.set(generate_message)
+        except Exception as e:
+            ui.notification_show(f"Error: {str(e)}", type="error")
+            
+    @reactive.effect
+    @reactive.event(input.adjust)
+    def adjust_message():
+        option = input.adjust_option()
+        if not option:
+            ui.notification_show("Please select an option to adjust the message.", type="error")
+            return
+        if not message():
+            ui.notification_show("No message to adjust.", type="error")
+            return
+        api_key = input.api_key()
+        if not api_key:
+            ui.notification_show("Please enter your OpenAI API key.", type="error")
+            return
+        client = OpenAI(api_key=api_key)
+        prompt = f"""Please help me adjust a message with the following specifications:
+        Initial message: {message.get()}
+        Please adjust the message to: {option}
+        Ensure you follow good spacing and formatting.
+        Only provide the message text, no need to include the instructions or specifications.
+        """
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that helps draft emails and text messages."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            adjusted_message = response.choices[0].message.content.strip()
+            ui.notification_show("Message adjusted successfully!", duration=3)
+            message.set(adjusted_message)
         except Exception as e:
             ui.notification_show(f"Error: {str(e)}", type="error")
     
