@@ -5,7 +5,9 @@ import os
 try:
     from setup import api_key1
 except ImportError:
-    api_key1 = os.getenv("OPENAI_API_KEY")
+    pass
+    
+api_key1 = os.getenv("OPENAI_API_KEY")
     
 app_info = """
 This app uses OpenAI 4o-mini to generate messages based on user inputs.
