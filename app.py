@@ -44,6 +44,7 @@ app_ui = ui.page_fluid(
         ),
         ui.column(4,
             ui.row([
+                ui.input_switch("email_mode", "Email mode", value = True),
                 ui.input_switch("fix_spelling", "Fix spelling"),
                 ui.input_switch("fix_grammar", "Fix grammar"),
                 ui.input_switch("fix_punctuation", "Fix punctuation"),
@@ -120,6 +121,7 @@ def server(input, output, session):
         Length: {length_map[input.length()]}
         Additional instructions: {input.custom_instructions() if input.custom_instructions() else 'None'}
         Special instructions: {', '.join(special_instructions) if special_instructions else 'None'}
+        Format mode: {"as an email" if input.email_mode() else "as a message"}
         Ensure you follow good spacing and formatting.
         Only provide the message text, no need to include the instructions or specifications.
         """ 
